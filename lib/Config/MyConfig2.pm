@@ -15,7 +15,7 @@
 
 =head1 NAME
 
-Config::MyConfig2 is a flexible configuration file loader, that reads and writes
+Config::MyConfig2 is a flexible configuration file parser, that reads and writes
 Apache-Style configuration files, with global key/value pairs and
 directives <directive my_directive></directive>
 
@@ -236,6 +236,16 @@ Returns a global value as a scalar (type = single) or a reference to an array
   $value = $myconfig->GetGlobalValue('my_directive','foo')
   $value_array_ref = $myconfig->GetGlobalValue('my_directive','foo')
 
+=head2 GetDirectiveValue
+
+Expects the name of a directive, directive identifier and a keyword.
+
+Returns a directive value as a scalar (type = single) or a reference to an array
+(type = multi)
+
+  $value = $myconfig->GetGlobalValue('my_directive','some_identifier','foo')
+  $value_array_ref = $myconfig->GetGlobalValue('foo')
+
 =head2 SetGlobalValue
 
 Sets the value of a global keyword.
@@ -269,9 +279,15 @@ passed value will be added to a list of values.
 
 Writes the (modified) configuration file back to disk.
 
-Optionally expects a full qualified filename, where the configuration is written to.
+Expects a name-string, that is shown in the configuration file header comments and a filename where
+the configuration should be saved to.
 
-  $myconfig->WriteConfig('/tmp/foo.cfg'); 
+  $myconfig->WriteConfig('Foo Bars Configuration File','/tmp/foo.cfg'); 
+
+=head2 error
+
+Internal method, that is used to throw an error. The default behavior is to
+croack().
 
 =head1 EXAMPLE
 
@@ -414,7 +430,7 @@ Optionally expects a full qualified filename, where the configuration is written
 
 =back
 
-A more advanced example can be found in the included example program backup.pl.
+A more advanced example can be found in the included example program myconfig-demo.pl.
 
 =head1 NOTES
 
@@ -494,7 +510,7 @@ See http://dev.perl.org/licenses/ for more information.
 
 package Config::MyConfig2;
 
-our $VERSION = 2.15;
+our $VERSION = 2.16;
 
 use strict;
 use Carp;
