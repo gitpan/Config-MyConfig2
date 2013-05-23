@@ -1,5 +1,9 @@
 Revision history for MyConfig2
 
+2.17    2013-05-24
+        Bugfix in the method GetGlobalValue
+2.16    2013-05-20
+        Some minor bugfixes and typos in the POD
 2.15    2013-05-18
         First release of this module for CPAN
 

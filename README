@@ -1,4 +1,4 @@
-MyConfig2 is a flexible configuration file loader, that reads and writes
+MyConfig2 is a flexible configuration file parser, that reads and writes
 Apache-Style configuration files, with global key/value pairs and 
 directives <directive my_directive></directive>
 

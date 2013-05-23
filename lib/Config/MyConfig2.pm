@@ -510,7 +510,7 @@ See http://dev.perl.org/licenses/ for more information.
 
 package Config::MyConfig2;
 
-our $VERSION = 2.16;
+our $VERSION = 2.17;
 
 use strict;
 use Carp;
@@ -807,7 +807,7 @@ sub GetGlobalValue
 }
 
 # Returns a value from a directive or undef
-sub GetDirectiveVaue
+sub GetDirectiveValue
 {
 	my $self = shift;
 	my $directive = shift;
