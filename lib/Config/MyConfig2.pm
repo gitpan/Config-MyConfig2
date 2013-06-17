@@ -63,7 +63,7 @@ It supports:
  
  $errmsg = $myconfig->SetDirectiveValue('directive_foo','identifier_baz','key_foobar','value_foo_bar_baz');
  
- $myconfig->WriteConfig('some_file.cfg');
+ $myconfig->WriteConfig('My new config file','some_file.cfg');
  
 
 =head1 DESCRIPTION
@@ -202,20 +202,34 @@ If a check fails, an errors is thrown.
   $config_hash_tree = $self->ReadConfig()
 
 Reads and parses the configuration file. Throws an error, if a parsing error (i.e. syntax error) occurs.
+
 Returns the configuration as a hash_tree. See the example below.
 
 =head2 GetDirectiveNames
 
-Returns a list of all directive names as an array.
+Returns a list of all directive names as an array or an empty list, if no directive names have been found.
 
   @directives = $myconfig->GetDirectiveNames()
 
 =head2 GetDirectiveIdentifiers
 
 Expects the name of a pre-defined directive
-Returns a list of all directive identifiers as an array.
+
+Returns a list of all directive identifiers as an array or an empty list in case of identifiers have been found.
 
   @identifiers = $myconfig->GetDirectiveIdentifiers('my_directive')
+  
+=head2 GetConfigRef
+
+Returns a hash reference to the configuration, which is a nested datastructure. You might want to use
+
+   use Data::Dumper;
+   print Dumper($config_reference)
+   
+to evaluate the details of this structure.
+
+Because it is a reference, all modifications of this structure will also end up in configuration files, written
+with WriteConfig().
 
 =head2 GetGlobalValue
 Expects the name of a valid keyword 
@@ -274,6 +288,14 @@ checkng regex.
 
 If the directive identifier doesn't exist, it will be created. If the keyword is of type 'multi', the
 passed value will be added to a list of values.
+
+=head2 DeleteDirectiveIdentifier
+
+ Deletes an identifier from a directive.
+ 
+ Expects a directive name and directive identifier
+ 
+ Returns the removed values or undef is no values for this directive/identifiehave been deleted. 
 
 =head2 WriteConfig
 
@@ -510,7 +532,7 @@ See http://dev.perl.org/licenses/ for more information.
 
 package Config::MyConfig2;
 
-our $VERSION = 2.17;
+our $VERSION = 2.19;
 
 use strict;
 use Carp;
@@ -521,11 +543,7 @@ sub new
 	my($class,%opts) = @_;
 	my($self) = {};
 	bless ($self,$class);
-	$self->{opts} = \%opts;
-	 
-    $self->error("Configuration File not specified!") if (! $self->{opts}->{conffile});
-    $self->error("Configuration File $self->{opts}->{conffile} not readable!") if (! -r $self->{opts}->{conffile});
-	
+	$self->{opts} = \%opts; 
 	return $self;
 }
 
@@ -542,8 +560,11 @@ sub SetupDirectives
 sub ReadConfig
 {
 	my $self = shift;
+	
+	$self->error("Configuration File not specified!") if (! $self->{opts}->{conffile});
+    $self->error("Couldn't read configuration file $self->{opts}->{conffile}!") if (! -r $self->{opts}->{conffile});
+	
 	my ($line,$directive_name,$directive_value);
-		
 	open CONF,"< ".$self->{opts}->{conffile} or $self->error("Could not open configuration file $self->{opts}->{conffile}");
 	while (<CONF>)
 	{
@@ -586,7 +607,7 @@ sub ReadConfig
 		}
 		
 		# keyword identification
-		elsif ($_ =~ /^\s*(.+?)[\s\t\=]+(.+)\s*$/)
+		elsif ($_ =~ /^\s*(.+?)[\s\t\=]+(.*)\s*$/)
 		{
 			if ($directive_name) 
 			{
@@ -697,6 +718,11 @@ sub _CheckRequired
 			# the requirement is fullfilled)
 			if ($self->{Directives}->{$directive}->{$keyword}->{required} eq 'true' and !defined $self->{config}->{$directive}->{$keyword})
 			{
+				# For the global directive, it is not required to cycle through to subdirectives
+				if ($directive eq 'global')
+				{
+					$self->error("Required keyword $keyword not found in configfile directive $directive")
+				}
 				# Go through all directives (that might be either keywords or subdirectives)
 				foreach my $subdirective (keys %{$self->{config}->{$directive}})
 				{
@@ -753,15 +779,12 @@ sub WriteConfig
 		foreach my $directive (@directives)
 		{
 			my @identifiers = $self->GetDirectiveIdentifiers($directive);
-			if (scalar (@identifiers))
+			foreach my $identifier (@identifiers)
 			{
-				foreach my $identifier (@identifiers)
-				{
-					print CONF "<$directive $identifier>\n";
-					$base = $self->{config}->{$directive}->{$identifier};
-					$self->_WriteKeysValues($base,*CONF,"\t");
-					print CONF "<$directive>\n\n";
-				}
+				print CONF "<$directive $identifier>\n";
+				$base = $self->{config}->{$directive}->{$identifier};
+				$self->_WriteKeysValues($base,*CONF,"\t");
+				print CONF "</$directive>\n\n";
 			}
 		}	
 	}
@@ -796,6 +819,12 @@ sub _WriteKeysValues
 	
 }
 
+# Returns a reference to the configuration
+sub GetConfigRef
+{
+	my $self = shift;
+	return $self->{config};
+}
 
 # Returns a global value or undef
 sub GetGlobalValue
@@ -815,6 +844,16 @@ sub GetDirectiveValue
 	my $key = shift;
 	
 	return($self->{config}->{$directive}->{$identifier}->{$key});
+}
+
+# Deletes an identifier and value from a directive and returns the removed
+# values or undef if the directive/identifier combination doesn't exist
+sub DeleteDirectiveIdentifier
+{
+	my $self = shift;
+	my $directive = shift;
+	my $identifier = shift;
+	return(delete($self->{config}->{$directive}->{$identifier}));
 }
 
 # Returns all directive names (except global) as a list or undef
@@ -842,7 +881,7 @@ sub GetDirectiveIdentifiers
 	{
 		push (@identifiers,$_);
 	}
-	scalar(@identifiers) ? return (@identifiers) : return undef;
+	return(@identifiers);
 }
 
 # Sets a global directive value

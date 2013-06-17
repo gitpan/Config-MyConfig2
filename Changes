@@ -1,5 +1,8 @@
 Revision history for MyConfig2
-
+2.19	2013-06-18
+	Some useful enhancements
+2.18	2013-05-31
+        Couple of bugfixes
 2.17    2013-05-24
         Bugfix in the method GetGlobalValue
 2.16    2013-05-20
